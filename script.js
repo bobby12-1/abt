@@ -1,5 +1,4 @@
-<script>
-function submitBooking(event) {
+  function submitBooking(event) {
   event.preventDefault();
 
   const form = event.target;
