@@ -1,4 +1,4 @@
-  function submitBooking(event) {
+function submitBooking(event) {
   event.preventDefault();
 
   const form = event.target;
@@ -24,6 +24,7 @@
   }
 
   if (paymentMethod === 'paystack') {
+    // Convert to kobo
     const paystackAmount = amount * 100;
 
     const handler = PaystackPop.setup({
@@ -31,7 +32,7 @@
       email: email,
       amount: paystackAmount,
       currency: 'NGN',
-      ref: 'DOTMOT_' + Math.floor((Math.random() * 1000000000) + 1),
+      ref: 'ABTOB_' + Math.floor((Math.random() * 1000000000) + 1),
       metadata: {
         custom_fields: [
           { display_name: "Customer Name", value: name },
@@ -39,16 +40,8 @@
         ]
       },
       callback: function(response) {
-        sendBookingToBackend({
-          name,
-          email,
-          room,
-          guests,
-          checkin,
-          checkout,
-          paymentMethod,
-          reference: response.reference
-        });
+        // Send booking details + payment reference to backend
+        sendBookingToBackend({ name, email, room, guests, checkin, checkout, paymentMethod, reference: response.reference });
       },
       onClose: function() {
         alert('Payment was not completed.');
@@ -57,41 +50,36 @@
 
     handler.openIframe();
   } else {
-    // Bank Transfer
-    sendBookingToBackend({
-      name,
-      email,
-      room,
-      guests,
-      checkin,
-      checkout,
-      paymentMethod,
-      reference: 'BANK_TRANSFER'
-    });
-
-    alert("Please make a transfer to:\nAccount Name: Dotmot Hotel\nAccount Number: 5953721520\nBank: Example Bank\n\nA confirmation email will follow once verified.");
+    // Bank Transfer: Directly send to backend
+    sendBookingToBackend({ name, email, room, guests, checkin, checkout, paymentMethod, reference: 'BANK_TRANSFER' });
+    alert("Please make a transfer to:\nAccount Name: Abtob Hotel\nAccount Number: 5953738863\nBank: Moniepoint\n\nA confirmation email will follow once verified.");
   }
 }
 
-function sendBookingToBackend(data) {
-  fetch('https://dotmot-backend.onrender.com/api/book', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
+fetch('https://dotmot-backend.onrender.com/api/book', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: form.name.value,
+    email: form.email.value,
+    roomType: form.roomType.value,
+    guests: form.guests.value,
+    checkIn: form.checkIn.value,
+    checkOut: form.checkOut.value,
+    paymentMethod: 'Bank Transfer'
   })
-  .then(res => res.json())
-  .then(response => {
-    if (response.success) {
-      alert("Booking submitted successfully!");
-    } else {
-      alert("Failed to submit booking. Please try again.");
-    }
-  })
-  .catch(error => {
-    console.error('Error submitting booking:', error);
-    alert("Something went wrong while submitting your booking.");
-  });
-}
-</script>
+})
+.then(res => res.json())
+.then(data => {
+  if (data.success) {
+    alert("Booking sent successfully!");
+  } else {
+    alert("Booking failed.");
+  }
+})
+.catch(err => {
+  console.error('Error:', err);
+  alert("Something went wrong.");
+});
