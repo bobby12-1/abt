@@ -1,3 +1,4 @@
+<script>
 function submitBooking(event) {
   event.preventDefault();
 
@@ -24,7 +25,6 @@ function submitBooking(event) {
   }
 
   if (paymentMethod === 'paystack') {
-    // Convert to kobo
     const paystackAmount = amount * 100;
 
     const handler = PaystackPop.setup({
@@ -40,8 +40,16 @@ function submitBooking(event) {
         ]
       },
       callback: function(response) {
-        // Send booking details + payment reference to backend
-        sendBookingToBackend({ name, email, room, guests, checkin, checkout, paymentMethod, reference: response.reference });
+        sendBookingToBackend({
+          name,
+          email,
+          room,
+          guests,
+          checkin,
+          checkout,
+          paymentMethod,
+          reference: response.reference
+        });
       },
       onClose: function() {
         alert('Payment was not completed.');
@@ -50,36 +58,41 @@ function submitBooking(event) {
 
     handler.openIframe();
   } else {
-    // Bank Transfer: Directly send to backend
-    sendBookingToBackend({ name, email, room, guests, checkin, checkout, paymentMethod, reference: 'BANK_TRANSFER' });
+    // Bank Transfer
+    sendBookingToBackend({
+      name,
+      email,
+      room,
+      guests,
+      checkin,
+      checkout,
+      paymentMethod,
+      reference: 'BANK_TRANSFER'
+    });
+
     alert("Please make a transfer to:\nAccount Name: Dotmot Hotel\nAccount Number: 5953721520\nBank: Example Bank\n\nA confirmation email will follow once verified.");
   }
 }
 
-fetch('https://dotmot-backend.onrender.com/api/book', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    name: form.name.value,
-    email: form.email.value,
-    roomType: form.roomType.value,
-    guests: form.guests.value,
-    checkIn: form.checkIn.value,
-    checkOut: form.checkOut.value,
-    paymentMethod: 'Bank Transfer'
+function sendBookingToBackend(data) {
+  fetch('https://dotmot-backend.onrender.com/api/book', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
   })
-})
-.then(res => res.json())
-.then(data => {
-  if (data.success) {
-    alert("Booking sent successfully!");
-  } else {
-    alert("Booking failed.");
-  }
-})
-.catch(err => {
-  console.error('Error:', err);
-  alert("Something went wrong.");
-});
+  .then(res => res.json())
+  .then(response => {
+    if (response.success) {
+      alert("Booking submitted successfully!");
+    } else {
+      alert("Failed to submit booking. Please try again.");
+    }
+  })
+  .catch(error => {
+    console.error('Error submitting booking:', error);
+    alert("Something went wrong while submitting your booking.");
+  });
+}
+</script>
